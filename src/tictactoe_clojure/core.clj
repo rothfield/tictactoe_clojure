@@ -10,13 +10,23 @@
 ;;
 
 
+
+(defn is-position?[x]
+  (set? x))
+
+(defn is-player?[z]
+  (contains? #{:o :x} z))
+
 (defn opposite-player[player]
+  {:pre [(is-player? player)]}
   (get {:o :x :x :o} player))
 
 (def starting-board  (sorted-set))
 
 
 (defn moves[pos player]
+  {:pre [(is-player? player)]
+   :post [(seq? %)]}
  (map (fn[my-num] (vector my-num player))
  (clojure.set/difference  (set (drop 1 (range 10))) (set (map first pos))))
   )
@@ -82,8 +92,56 @@
             true
             0))
 
+(defn is-score?[x]
+  (number? x))
 
+(defn is-path?[x]
+  (or (nil? x)
+      (seq? x)))
+
+(def player->string
+  {:x "X" :o "O" })
+
+(defn board->string[pos]
+    (apply str (map (fn print-board-aux[i]
+         (str
+         (cond 
+           (contains? pos [i :x])
+               "X"
+           (contains? pos [i :o])
+               "O"
+           true
+           ".")
+           (when (zero? (mod i 3))
+            (str (get { 1 "123"
+                        2 "456"
+                        3 "789" 
+                       } (/ i 3)) "\n")))) 
+  (rest (range 0 10)))))
+  
+(defn print-board
+  ([pos]
+    (println (board->string pos))
+)
+  ([pos player]
+  (println (str 
+             (get player->string player) 
+                " to move\n\n"
+            (board->string pos)
+             "\n\n"))))
+
+;; (print-board starting-board :x)
+
+  
 (defn minimax[pos depth player]
+  {:pre [
+        (is-position? pos) 
+         (number? depth)
+         (is-player? player)
+         ]
+  :post [ (= 2 (count %))
+          (is-score? (first %))] 
+   }
   (cond 
          (or (zero? depth)
              (won? pos :x)
@@ -105,8 +163,6 @@
                     new-value (- zz-new-value)
                     ]
                (cond 
-                (= -1 new-value) ;; win
-                 [new-value (conj new-path move)]
                 (> new-value best-score)
                 (recur (rest moves)
                        new-value
@@ -119,15 +175,22 @@
                 ))
         ))))
 
+(defn run-minimax[pos depth player]
+  (print-board pos player)
+  (println (minimax pos depth player)))
 
-;;(println (minimax starting-board 1 :x))
+;;(println (minimax starting-board 9 :x))
 ;; (print-board losing-pos-o-to-move)
 ;;
 ;; (println (minimax losing-pos-o-to-move 4 :o))
-;;(println (minimax x-wins 3 :x))
+;;(run-minimax x-wins 9 :x)
+;;->  [1 ([2 :x] [3 :o] [5 :x] [4 :o] [6 :x] [8 :o] [9 :x])]
+;;
+;; (display x-wins)
+;;
 ;;(println (minimax x-wins 3 :o))
 ;;(println (minimax x-wins-immediately 3 :x))
-;; (print-board x-wins)
+;; (print-board x-wins :x)
 ;; (print-board winning-pos)
  ; (use 'clojure.stacktrace)
  ; (print-stack-trace *e)
